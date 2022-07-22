@@ -73,14 +73,16 @@ class Game extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      gameGrid: [[]],
+      gameGrid: [[new Node()]],
       players: [new Player("Player1", "white", true), new Player("Player2", "Black", false)],
       selectedNode: {
         "isSelect": false,
         "isInHand": false,
         "bugName": '',
         "coord": []
-      }
+      },
+      oddOffset: true
+
 
     }
   }
@@ -89,12 +91,61 @@ class Game extends React.Component {
     var tempGrid = this.state.gameGrid
     tempGrid = [[new Node()]]
     this.setState({ gameGrid: tempGrid })
-    console.log(this.state.gameGrid)
+    //console.log(this.state.gameGrid)
   }
   //Add all the hex that border the hex we just put on the coord passed in porp
-  addBorderHex = (coord) => {
-    const row = coord[0]
-    const col = coord[1]
+  expandGrid = (coord) => {
+
+    var row = coord[0]
+    var col = coord[1]
+    var tempGrid = this.state.gameGrid
+    //Add empty Row/Columns if clicked on edge of grid
+    if (col === 0) {
+      for (var i = 0; i < tempGrid.length; i++) {
+        tempGrid[i].unshift('')
+        col += 1
+      }
+    }
+    if (row === 0) {
+      tempGrid.unshift(new Array(tempGrid[0].length))
+      console.log(!this.state.oddOffset)
+      this.setState({ oddOffset: !this.state.oddOffset })
+      //tempGrid.unshift(new Array(tempGrid[0].length))
+      row += 1
+    }
+    if (col === (tempGrid[0].length - 1)) {
+      for (var i = 0; i < tempGrid.length; i++) {
+        tempGrid[i].push('')
+      }
+    }
+    if (row === (tempGrid.length - 1)) {
+      tempGrid.push(new Array(tempGrid[0].length))
+      console.log("hit" + new Array(tempGrid[0].length))
+    }
+    //Add nodes around clicked node
+
+    if ((row % 2) !== 0) {
+      if (!tempGrid[row - 1][col - 1]) { tempGrid[row - 1][col - 1] = new Node() }
+      if (!tempGrid[row - 1][col]) { tempGrid[row - 1][col] = new Node() }
+      if (!tempGrid[row][col - 1]) { tempGrid[row][col - 1] = new Node() }
+      if (!tempGrid[row][col + 1]) { tempGrid[row][col + 1] = new Node() }
+      if (!tempGrid[row + 1][col - 1]) { tempGrid[row + 1][col - 1] = new Node() }
+      if (!tempGrid[row + 1][col]) { tempGrid[row + 1][col] = new Node() }
+    }
+    if ((row % 2) == 0) {
+      if (!tempGrid[row - 1][col + 1]) { tempGrid[row - 1][col + 1] = new Node() }
+      if (!tempGrid[row - 1][col + 2]) { tempGrid[row - 1][col + 2] = new Node() }
+      if (!tempGrid[row][col - 1]) { tempGrid[row][col - 1] = new Node() }
+      if (!tempGrid[row][col + 1]) { tempGrid[row][col + 1] = new Node() }
+      if (!tempGrid[row + 1][col + 1]) { tempGrid[row + 1][col + 1] = new Node() }
+      if (!tempGrid[row + 1][col + 2]) { tempGrid[row + 1][col + 2] = new Node() }
+    }
+
+
+
+    this.setState({ gameGrid: tempGrid })
+    //console.log("new")
+    //console.log(this.state)
 
   }
   //Move a bug already in play
@@ -114,8 +165,8 @@ class Game extends React.Component {
       <>
         <Title />
         <div className='Game'>
-          <Hive gameGrid={this.state.gameGrid} />
-          <button onClick={this.gameStart}>does this work</button>
+          <Hive gameGrid={this.state.gameGrid} oddOffset={this.state.oddOffset} hexClick={this.expandGrid} />
+          <button onClick={() => console.log("this not on rn")}>does this work</button>
           <PlayerCard player={this.state.players[0]} />
           <PlayerCard player={this.state.players[1]} />
         </div>
@@ -127,3 +178,5 @@ class Game extends React.Component {
 }
 
 export default Game
+
+//this.expandGrid([0, 0])

@@ -3,7 +3,7 @@ import './hive.css'
 import Hex from './Hex'
 
 const Hive = (props) => {
-    const { gameGrid } = props
+    const { gameGrid, hexClick, oddOffset } = props
     //console.log('GameGrid:')
     //console.log(gameGrid)
 
@@ -13,8 +13,8 @@ const Hive = (props) => {
 
     const NbHexX = gameGrid[0].length
     const NbHexY = gameGrid.length
-    console.log("nbhexX: " + NbHexX)
-    console.log("nbhexY: " + NbHexY)
+    //console.log("nbhexX: " + NbHexX)
+    //console.log("nbhexY: " + NbHexY)
 
     var hexWidth = 0;
     var size = 0;
@@ -25,7 +25,7 @@ const Hive = (props) => {
 
             //Singular hexagon width
             if (NbHexX === 1) {
-                console.log('singularHex')
+                //console.log('singularHex')
 
             }
             hexWidth = (NbHexX === 1 ? TotalLength : (TotalLength / (NbHexX + 0.5)))
@@ -54,12 +54,13 @@ const Hive = (props) => {
     const centerPts = Array(NbHexY).fill().map(entry => Array(NbHexX))
     for (let i = 0; i < NbHexY; i++) {
         var adjustWidth = 0;
-        if (NbHexY > 1 && !(i % 2)) { adjustWidth = hexWidth / 2 }
+        if ((oddOffset == true && !(i % 2)) || (oddOffset == false && (i % 2))) { adjustWidth = hexWidth / 2 }
+        if (i === 0) { adjustWidth = 0 }
         for (let j = 0; j < NbHexX; j++) {
             centerPts[i][j] = [j * hexWidth + hexWidth / 2 + adjustWidth, (i * (hexHeight * 0.75)) + size]
         }
     }
-    console.log(centerPts)
+    //console.log(centerPts)
     //console.log("centerPts"+centerPts[0])
 
     //Get hexaPts from a centerPt(tout les sommets de lhexagone au centerpts correspondant)
@@ -77,8 +78,8 @@ const Hive = (props) => {
         }
 
     }
-    console.log('hexapts: ')
-    console.log(hexaPts)
+    //console.log('hexapts: ')
+    //console.log(hexaPts)
 
 
     const ptsToString = (hexagon) => {
@@ -88,7 +89,7 @@ const Hive = (props) => {
 
         }
 
-        console.log(toReturn)
+        //console.log(toReturn)
         return toReturn
     }
 
@@ -102,10 +103,10 @@ const Hive = (props) => {
 
                 return (row.map((hexagon, colIndex) => {
                     //console.log('hexagon: ' + hexagon)
-                    console.log('node: ')
-                    console.log(gameGrid[rowIndex][colIndex])
+                    //console.log('node: ')
+                    //console.log(gameGrid[rowIndex][colIndex])
                     if (gameGrid[rowIndex][colIndex]) {
-                        return <Hex node={gameGrid[rowIndex][colIndex]} pts={ptsToString(hexagon)} coord={[rowIndex, colIndex]} key={rowIndex + '-' + colIndex}></Hex>
+                        return <Hex hexClick={hexClick} node={gameGrid[rowIndex][colIndex]} pts={ptsToString(hexagon)} coord={[rowIndex, colIndex]} key={rowIndex + '-' + colIndex}></Hex>
                     }
 
                     return null
