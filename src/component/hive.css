@@ -1,4 +1,3 @@
-
 .hex {
     cursor: pointer;
     fill-opacity: 0.4;
@@ -6,5 +5,10 @@
     stroke-width: 1;
 }
 
-
-
+.board {
+    border-style: solid;
+    border-color: black;
+    align-content: center;
+    width: 860px;
+    height: 1000px
+}
