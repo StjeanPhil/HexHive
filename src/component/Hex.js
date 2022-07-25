@@ -4,18 +4,25 @@ const Hex = (props) => {
   const pts = props.pts
   const coord = props.coord
   const node = props.node
+  const hexClick = props.hexClick
+  const center = props.center
 
   //console.log("node:")
   //console.log(node)
   var classes = 'hex'
-  if (node.isAvailable) { classes += ' availableHex' }
+  if (node && node.isAvailable) { classes += ' availableHex' }
   const clickHandler = () => {
-    props.hexClick(coord)
+    hexClick(coord)
     console.log('Hexagon [ ' + coord + ' ] clicked')
   }
 
   return (
-    <polygon className={classes} points={pts} onClick={clickHandler} ></polygon>
+    <g>
+
+      <polygon className={classes} points={pts} onClick={clickHandler} ></polygon>
+
+    </g>
+
   )
 }
 

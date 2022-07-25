@@ -1,78 +1,26 @@
 import React from 'react'
+
+//Component
 import Title from './Title'
 import Hive from './Hive'
 import PlayerCard from './PlayerCard'
 
-class Node {
-  color = 'none'
-  content = []
-  id;
-  image = ''
-  isSelected = false
-  isVisible = false
-  isInBorder = false
-  isAvailable = false
+//Classes
+import Node from '../classes/Node'
+import Bug from '../classes/Bug'
+import Player from '../classes/Player'
 
-  constructor(id) {
-    this.id = id
-  }
-  setDisplay(file) {
-    this.add_bugimage = file
-  }
-  add_bug(Bug) {
-    this.content.push(Bug)
-    this.setDisplay(Bug.image)
-  }
-  pop_Bug(Bug) {
-    this.content.pop(Bug)
-  }
-}
 
-class Bug {
-  name;
-  image;
 
-  constructor(name) {
-    this.name = name
-    this.image = '../images/' + name
-  }
-}
 
-class Player {
-  isTurn = false;
-  name;
-  hand = [];//dict of bugs
-  color;
-  //Starting hand
-  defaultHand = {
-    "Queen": 1,
-    "Spider": 2,
-    "Beetle": 2,
-    "Grasshopper": 3,
-    "Ant": 3
-  }
-  constructor(name, color, starts) {
-    this.name = name
-    this.color = color
-    this.hand = this.defaultHand
-    if (starts) { this.isTurn = true }
-  }
-  //Put Back all bugs in hand
-  reset_Hand() {
-    this.hand = this.defaultHand
-  }
-  //Remove 1 Bug from hand
-  place_bug(Bug) {
-    this.hand[Bug] -= 1
-  }
 
-}
 
 
 class Game extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      rules: 'default',
       gameGrid: [[new Node()]],
       players: [new Player("Player1", "white", true), new Player("Player2", "Black", false)],
       selectedNode: {
@@ -81,7 +29,7 @@ class Game extends React.Component {
         "bugName": '',
         "coord": []
       },
-      oddOffset: true
+      isOddRowOffset: false
 
 
     }
@@ -98,54 +46,78 @@ class Game extends React.Component {
 
     var row = coord[0]
     var col = coord[1]
+    var rowAdded = false
+    var colAdded = false
+
+    //Make copy to modify
     var tempGrid = this.state.gameGrid
-    //Add empty Row/Columns if clicked on edge of grid
+    var tempIsOddRowOffset = this.state.isOddRowOffset
+
+    //activate the clicked node
+    tempGrid[coord[0]][coord[1]].isAvailable = true
+    this.setState({ gameGrid: tempGrid })
+
+
+    //If the first col is clicked, add col at the start of row arrays
     if (col === 0) {
+      //For all the rows move add one col at the start
       for (var i = 0; i < tempGrid.length; i++) {
-        tempGrid[i].unshift('')
-        col += 1
+        tempGrid[i].unshift("")
       }
+      //the clicked Hex is now situated 1 col further
+      col += 1
+
     }
+    //if the first row is clicked, add a new empty row as the starting row
     if (row === 0) {
-      tempGrid.unshift(new Array(tempGrid[0].length))
-      console.log(!this.state.oddOffset)
-      this.setState({ oddOffset: !this.state.oddOffset })
-      //tempGrid.unshift(new Array(tempGrid[0].length))
+      const newRow = new Array(tempGrid[0].length)
+      tempGrid.unshift(newRow)
+      //the clicked Hex is now situated 1 row down
       row += 1
+      //rowAdded = true
+      tempIsOddRowOffset = !tempIsOddRowOffset
+
+
     }
     if (col === (tempGrid[0].length - 1)) {
       for (var i = 0; i < tempGrid.length; i++) {
         tempGrid[i].push('')
       }
+
+
+
     }
     if (row === (tempGrid.length - 1)) {
       tempGrid.push(new Array(tempGrid[0].length))
-      console.log("hit" + new Array(tempGrid[0].length))
     }
     //Add nodes around clicked node
-
-    if ((row % 2) !== 0) {
-      if (!tempGrid[row - 1][col - 1]) { tempGrid[row - 1][col - 1] = new Node() }
+    if ((((row % 2) !== 0) && !tempIsOddRowOffset) || (((row % 2) === 0) && tempIsOddRowOffset)) {
       if (!tempGrid[row - 1][col]) { tempGrid[row - 1][col] = new Node() }
+      if (!tempGrid[row - 1][col + 1]) { tempGrid[row - 1][col + 1] = new Node() }
+
       if (!tempGrid[row][col - 1]) { tempGrid[row][col - 1] = new Node() }
       if (!tempGrid[row][col + 1]) { tempGrid[row][col + 1] = new Node() }
+
+      if (!tempGrid[row + 1][col]) { tempGrid[row + 1][col] = new Node() }
+      if (!tempGrid[row + 1][col + 1]) { tempGrid[row + 1][col + 1] = new Node() }
+    }
+
+
+    if ((((row % 2) == 0) && !tempIsOddRowOffset) || (((row % 2) !== 0) && tempIsOddRowOffset)) {
+      if (!tempGrid[row - 1][col - 1]) { tempGrid[row - 1][col - 1] = new Node() }
+      if (!tempGrid[row - 1][col]) { tempGrid[row - 1][col] = new Node() }
+
+      if (!tempGrid[row][col - 1]) { tempGrid[row][col - 1] = new Node() }
+      if (!tempGrid[row][col + 1]) { tempGrid[row][col + 1] = new Node() }
+
       if (!tempGrid[row + 1][col - 1]) { tempGrid[row + 1][col - 1] = new Node() }
       if (!tempGrid[row + 1][col]) { tempGrid[row + 1][col] = new Node() }
     }
-    if ((row % 2) == 0) {
-      if (!tempGrid[row - 1][col + 1]) { tempGrid[row - 1][col + 1] = new Node() }
-      if (!tempGrid[row - 1][col + 2]) { tempGrid[row - 1][col + 2] = new Node() }
-      if (!tempGrid[row][col - 1]) { tempGrid[row][col - 1] = new Node() }
-      if (!tempGrid[row][col + 1]) { tempGrid[row][col + 1] = new Node() }
-      if (!tempGrid[row + 1][col + 1]) { tempGrid[row + 1][col + 1] = new Node() }
-      if (!tempGrid[row + 1][col + 2]) { tempGrid[row + 1][col + 2] = new Node() }
-    }
-
-
 
     this.setState({ gameGrid: tempGrid })
-    //console.log("new")
-    //console.log(this.state)
+    this.setState({ isOddRowOffset: tempIsOddRowOffset })
+
+
 
   }
   //Move a bug already in play
@@ -165,10 +137,15 @@ class Game extends React.Component {
       <>
         <Title />
         <div className='Game'>
-          <Hive gameGrid={this.state.gameGrid} oddOffset={this.state.oddOffset} hexClick={this.expandGrid} />
-          <button onClick={() => console.log("this not on rn")}>does this work</button>
-          <PlayerCard player={this.state.players[0]} />
-          <PlayerCard player={this.state.players[1]} />
+
+          <Hive gameGrid={this.state.gameGrid} isOddRowOffset={this.state.isOddRowOffset} hexClick={this.expandGrid} />
+
+
+          <div className='playerContainer'>
+            <PlayerCard player={this.state.players[0]} rules={this.state.rules} hexClick={this.selectFromHand} />
+            <PlayerCard player={this.state.players[1]} rules={this.state.rules} hexClick={this.selectFromHand} />
+          </div>
+
         </div>
 
 
