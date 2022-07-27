@@ -7,6 +7,7 @@ const getHexaPts = (TotalLength, TotalHeight, NbHexX, NbHexY, isOddRowOffset, od
     var size = 0;
     var hexHeight = 0;
 
+    //Get the size of a singular hex (height/length)
     const getHexSizing = (modelSize) => {
         //If we use the nb in a row to base our sizing
         if (modelSize === 'x') {

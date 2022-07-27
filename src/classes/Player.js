@@ -3,14 +3,6 @@ import Bug from './Bug'
 
 
 
-const startingHand = [
-    [new Node(new Bug('Queen'))], //1xQueen
-    [new Node(new Bug('Spider')), new Node(new Bug('Spider'))],//2xSpider
-    [new Node(new Bug('Beetle')), new Node(new Bug('Beetle'))], //2xBeetle
-    [new Node(new Bug('Grasshopper')), new Node(new Bug('Grasshopper')), new Node(new Bug('Grasshopper'))], //3xGrasshopper
-    [new Node(new Bug('Ant')), new Node(new Bug('Ant')), new Node(new Bug('Ant'))] //3xAnt
-]
-
 
 export default class Player {
     isTurn = false;
@@ -19,12 +11,13 @@ export default class Player {
     color;
     //Starting hand
     startingHand = [
-        [new Node(new Bug('Queen'))], //1xQueen
-        [new Node(new Bug('Spider')), new Node(new Bug('Spider'))],//2xSpider
-        [new Node(new Bug('Beetle')), new Node(new Bug('Beetle'))], //2xBeetle
-        [new Node(new Bug('Grasshopper')), new Node(new Bug('Grasshopper')), new Node(new Bug('Grasshopper'))], //3xGrasshopper
-        [new Node(new Bug('Ant')), new Node(new Bug('Ant')), new Node(new Bug('Ant'))] //3xAnt
+        new Node([new Bug('Queen')]),   //1xQueen                          
+        new Node([new Bug('Spider'), new Bug('Spider')]),   //2xSpider
+        new Node([new Bug('Beetle'), new Bug('Beetle')]),   //2xBeetle
+        new Node([new Bug('Grasshop'), new Bug('Grasshop'), new Bug('Grasshop')]), //3xGrasshopper
+        new Node([new Bug('Ant'), new Bug('Ant'), new Bug('Ant')])  //3xAnt
     ]
+
 
     constructor(name, color, starts) {
         this.name = name

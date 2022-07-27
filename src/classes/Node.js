@@ -4,19 +4,20 @@ export default class Node {
     id;
     image = ''
     isSelected = false
-    isVisible = true
-    isInBorder = false
     isAvailable = false
-    isInPlay = false
+    isBufferHex = true
+    ownedBy = -1;
 
-    constructor(id) {
-        this.id = id
+
+    constructor(bugs) {
+        if (bugs) { this.content = bugs }
+
     }
     setDisplay(file) {
         this.add_bugimage = file
     }
     add_bug(Bug) {
-        this.content.push(Bug)
+        this.content.unshift(Bug)
         this.setDisplay(Bug.image)
     }
     pop_Bug(Bug) {

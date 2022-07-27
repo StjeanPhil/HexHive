@@ -37,16 +37,19 @@
 
 .hex {
     cursor: pointer;
+    fill-opacity: 0.4;
+    stroke: #000;
+    stroke-width: 2;
+}
+
+.bufferHex {
+    cursor: pointer;
     fill-opacity: 0.1;
     stroke: #000;
     stroke-width: 2;
 }
 
-
-
-.availableHex {
-    cursor: pointer;
-    fill-opacity: 0.4;
+.selectedHex {
     stroke: #000;
-    stroke-width: 1;
+    stroke-width: 20;
 }
