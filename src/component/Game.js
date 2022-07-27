@@ -29,7 +29,6 @@ class Game extends React.Component {
     }
   }
 
-
   //Restart the board
   gameStart = () => {
     var tempGrid = this.state.gameGrid
@@ -47,9 +46,19 @@ class Game extends React.Component {
         }
       }
     }
+    this.setState({ gameGrid: tempGrid })
   }
   //fake function right now but will need 
-  hideAvailableNodes = (coord, location) => {
+  hideAvailableNodes = () => {
+    var tempGrid = this.state.gameGrid
+    for (var i = 0; i < tempGrid.length; i++) {
+      for (var j = 0; j < tempGrid[0].length; j++) {
+        if (tempGrid[i][j]) {
+          tempGrid[i][j].isAvailable = false
+        }
+      }
+    }
+    this.setState({ gameGrid: tempGrid })
 
   }
   //remove the selected status to the currently selected node( doesnt affect currentplayer)
@@ -68,8 +77,7 @@ class Game extends React.Component {
       if (!this.state.selectedNode.isInHand) {
         tempGrid[this.state.selectedNode.coord[0]][this.state.selectedNode.coord[1]].isSelected = false
       }
-
-      this.hideAvailableNodes(this.state.selectedNode.coord)
+      this.hideAvailableNodes()
 
       //Flush sync makes sure the selectedNode state gets reset before any other code goes through
       flushSync(() => {
@@ -83,8 +91,8 @@ class Game extends React.Component {
           players: tempPlayers
         })
       });
-      console.log("Reset Selected Node::")
-      console.log(this.state.selectedNode)
+      //console.log("Reset Selected Node::")
+      //console.log(this.state.selectedNode)
 
     }
   }
@@ -117,8 +125,8 @@ class Game extends React.Component {
     flushSync(() => {
       this.setState({ selectedNode: tempSelectedNode })
     })
-    console.log("Select Selected Node:")
-    console.log(this.state.selectedNode)
+    //console.log("Select Selected Node:")
+    //console.log(this.state.selectedNode)
 
   }
   //handle the clicking of an hex whether in hand or in board
@@ -127,8 +135,11 @@ class Game extends React.Component {
     if (location === 'hive') {
       //If there was no selected node, select the clicked node
       if (!this.state.selectedNode.isSelect) {
-        this.setSelectedNode(coord, 'hive')
-        this.showAvailableNodes(coord, 'hive')
+        if (!this.state.gameGrid[coord[0]][coord[1]].isBufferHex) {
+          console.log("hit")
+          this.setSelectedNode(coord, 'hive')
+          this.showAvailableNodes(coord, 'hive')
+        }
         return
       }
       //if theres already a selected node,
@@ -170,23 +181,21 @@ class Game extends React.Component {
     }
 
   }
+  gridMaintenance = (grid, lastPlayedNode) => {
 
+    console.log(lastPlayedNode)
+    var { tempGrid, tempIsOddRowOffset } = this.expandGrid(grid, lastPlayedNode)
+    tempGrid = this.removeUnconnectedNodes(tempGrid, tempIsOddRowOffset)
+    tempGrid = this.keepGridSmall(tempGrid)
+    return tempGrid
+  }
   //Add all the hex that border the hex we just put on the coord passed in porp
-  expandGrid = (coord) => {
-
+  expandGrid = (tempGrid, coord) => {
+    var tempIsOddRowOffset = this.state.isOddRowOffset
     var row = coord[0]
     var col = coord[1]
-    var rowAdded = false
-    var colAdded = false
-
-    //Make copy to modify
-    var tempGrid = this.state.gameGrid
-    var tempIsOddRowOffset = this.state.isOddRowOffset
-
     //activate the clicked node
-    tempGrid[coord[0]][coord[1]].isBufferHex = false
-    this.setState({ gameGrid: tempGrid })
-
+    tempGrid[row][col].isBufferHex = false
 
     //If the first col is clicked, add col at the start of row arrays
     if (col === 0) {
@@ -196,22 +205,23 @@ class Game extends React.Component {
       }
       //the clicked Hex is now situated 1 col further
       col += 1
-
       //dont forget to offset the selected node position to keep track of it
       var tempSelectedNode = this.state.selectedNode
       tempSelectedNode.coord[1] += 1
       this.setState({ selectedNode: tempSelectedNode })
-
-
     }
     //if the first row is clicked, add a new empty row as the starting row
     if (row === 0) {
       const newRow = new Array(tempGrid[0].length)
       tempGrid.unshift(newRow)
       //the clicked Hex is now situated 1 row down
-      row += 1
-      //rowAdded = true
       tempIsOddRowOffset = !tempIsOddRowOffset
+      //Could probs re-code to not have to use flushsync here ---
+      flushSync(() => {
+        this.setState({ isOddRowOffset: tempIsOddRowOffset })
+      })
+      console.log("switch offset")
+      row += 1
       //dont forget to offset the selected node position to keep track of it
       var tempSelectedNode = this.state.selectedNode
       tempSelectedNode.coord[0] = 1
@@ -249,127 +259,99 @@ class Game extends React.Component {
       if (!tempGrid[row + 1][col - 1]) { tempGrid[row + 1][col - 1] = new Node() }
       if (!tempGrid[row + 1][col]) { tempGrid[row + 1][col] = new Node() }
     }
-    //this.keepGridSmall()
-    this.setState({ gameGrid: tempGrid, isOddRowOffset: tempIsOddRowOffset })
-
-
-
-
+    return { tempGrid, tempIsOddRowOffset }
   }
-  keepGridSmall = () => {
+  removeUnconnectedNodes = (tempGrid, tempIsOddRowOffset) => {
 
-    var tempGrid = this.state.gameGrid
-    //remove the unconnected nodes
     for (var i = 0; i < tempGrid.length; i++) {
       for (var j = 0; j < tempGrid[0].length; j++) {
-        //if there a node but its empty, check its connection to a bug
-        if (tempGrid[i][j] && tempGrid[i][j].content.length < 1) {
-          var foundConnectedBug = false
-          //check Around the node for a node with a bug/with content
-          if ((((i % 2) !== 0) && !this.state.isOddRowOffset) || (((i % 2) === 0) && this.state.isOddRowOffset)) {
+        //if its an empty node, make sure its connected to a node with content, if not delete node
+        if (tempGrid[i][j] && tempGrid[i][j].isBufferHex) {
+          var isConnectedToBug = false
+          //check the same row
+          if (j > 0 && tempGrid[i][j - 1] && !tempGrid[i][j - 1].isBufferHex) { isConnectedToBug = true }
+          if (j < (tempGrid[0].length - 1) && tempGrid[i][j + 1] && !tempGrid[i][j + 1].isBufferHex) { isConnectedToBug = true }
+          //check top and bot row
+          if (((i % 2) !== 0 && tempIsOddRowOffset) || ((i % 2) === 0 && !tempIsOddRowOffset)) {
             if (i > 0) {
-              if (tempGrid[i - 1][j] && tempGrid[i - 1][j].content.length >= 1) { foundConnectedBug = true }
-              if (j < (tempGrid[0].length - 1)) {
-                if (tempGrid[i - 1][j + 1] && tempGrid[i - 1][j + 1].content.length >= 1) { foundConnectedBug = true }
-              }
-            }
-            if (j < (tempGrid[0].length - 1)) {
-              if (tempGrid[i][j + 1] && tempGrid[i][j + 1].content.length >= 1) { foundConnectedBug = true }
-            }
-            if (j > 0) {
-              if (tempGrid[i][j - 1] && tempGrid[i][j - 1].content.length >= 1) { foundConnectedBug = true }
+              if (tempGrid[i - 1][j] && !tempGrid[i - 1][j].isBufferHex) { isConnectedToBug = true }
+              if (j > 0 && tempGrid[i - 1][j - 1] && !tempGrid[i - 1][j - 1].isBufferHex) { isConnectedToBug = true }
             }
             if (i < (tempGrid.length - 1)) {
-              if (tempGrid[i + 1][j] && tempGrid[i + 1][j].content.length >= 1) { foundConnectedBug = true }
-              if (j < tempGrid[0].length - 1) {
-                if (tempGrid[i + 1][j + 1] && tempGrid[i + 1][j + 1].content.length >= 1) { foundConnectedBug = true }
-              }
+              if (tempGrid[i + 1][j] && !tempGrid[i + 1][j].isBufferHex) { isConnectedToBug = true }
+              if (j > 0 && tempGrid[i + 1][j - 1] && !tempGrid[i + 1][j - 1].isBufferHex) { isConnectedToBug = true }
             }
           }
-          if ((((i % 2) == 0) && !this.state.isOddRowOffset) || (((i % 2) !== 0) && this.state.isOddRowOffset)) {
+          if (((i % 2) !== 0 && !tempIsOddRowOffset) || ((i % 2) === 0 && tempIsOddRowOffset)) {
             if (i > 0) {
-              if (tempGrid[i - 1][j] && tempGrid[i - 1][j].content.length >= 1) { foundConnectedBug = true }
-              if (j > 0) {
-                if (tempGrid[i - 1][j - 1] && tempGrid[i - 1][j - 1].content.length >= 1) { foundConnectedBug = true }
-              }
+              if (tempGrid[i - 1][j] && !tempGrid[i - 1][j].isBufferHex) { isConnectedToBug = true }
+              if (j < (tempGrid[0].length - 1) && tempGrid[i - 1][j + 1] && !tempGrid[i - 1][j + 1].isBufferHex) { isConnectedToBug = true }
             }
-            if (j > 0) {
-              if (tempGrid[i][j - 1] && tempGrid[i][j - 1].content.length >= 1) { foundConnectedBug = true }
+            if (i < (tempGrid.length - 1)) {
+              if (tempGrid[i + 1][j] && !tempGrid[i + 1][j].isBufferHex) { isConnectedToBug = true }
+              if (j < (tempGrid[0].length - 1) && tempGrid[i + 1][j + 1] && !tempGrid[i + 1][j + 1].isBufferHex) { isConnectedToBug = true }
             }
-            if (j < tempGrid[0].length - 1) {
-              if (tempGrid[i][j + 1] && tempGrid[i][j + 1].content.length >= 1) { foundConnectedBug = true }
-            }
-            if (i < tempGrid.length - 1) {
-              if (tempGrid[i + 1][j] && tempGrid[i + 1][j].content.length >= 1) { foundConnectedBug = true }
-              if (j < tempGrid[0].length - 1) {
-                if (tempGrid[i + 1][j - 1] && tempGrid[i + 1][j - 1].content.length >= 1) { foundConnectedBug = true }
-              }
-            }
-
-
-
           }
-          console.log(foundConnectedBug)
-          //if no connected bug, remove the node
-          if (!foundConnectedBug) {
-            console.log("remove one")
-            tempGrid[i][j] = ''
-          }
-
+          if (!isConnectedToBug) { tempGrid[i][j] = '' }
         }
       }
     }
+    return tempGrid
+  }
+  keepGridSmall = (grid) => {
+
+    var tempGrid = grid
     //check for empty borders
     //Check if top row empty,if empty remove first row
     var isEmpty = true
-    for (var i = 0; i < tempGrid[0].length; i++) { if (tempGrid[0][i] && tempGrid[0][i].content) { isEmpty = false } }
+    for (var i = 0; i < tempGrid[0].length; i++) { if (tempGrid[0][i]) { isEmpty = false } }
     if (isEmpty) {
-      console.log("hit")
+      flushSync(() => {
+        this.setState({ isOddRowOffset: !this.state.isOddRowOffset })
+      })
+
       tempGrid.shift()
     }
     isEmpty = true
     //check if left col empty, if empty, remove first elem of each row
-    for (var i = 0; i < tempGrid.length; i++) { if (tempGrid[i][0] && tempGrid[i][0].content) { isEmpty = false } }
+    for (var i = 0; i < tempGrid.length; i++) { if (tempGrid[i][0]) { isEmpty = false } }
     if (isEmpty) {
       for (var i = 0; i < tempGrid.length; i++) { tempGrid[i].shift() }
     }
     isEmpty = true
     //check if bot row empty, if empty remove last row
-    for (var i = 0; i < tempGrid[0].length; i++) { if (tempGrid[tempGrid.length - 1][i] && tempGrid[tempGrid.length - 1][i].content) { isEmpty = false } }
+    for (var i = 0; i < tempGrid[0].length; i++) { if (tempGrid[tempGrid.length - 1][i]) { isEmpty = false } }
     if (isEmpty) { tempGrid.pop() }
     isEmpty = true
     //check if right col empty,if empty remove the last elem of each row
-    for (var i = 0; i < tempGrid.length; i++) { if (tempGrid[i][tempGrid[0].length - 1] && tempGrid[i][tempGrid[0].length - 1].content) { isEmpty = false } }
+    for (var i = 0; i < tempGrid.length; i++) { if (tempGrid[i][tempGrid[0].length - 1]) { isEmpty = false } }
     if (isEmpty) {
       for (var i = 0; i < tempGrid.length; i++) { tempGrid[i].pop() }
     }
+    //console.log("minize tests done")
 
-    this.setState({ gameGrid: tempGrid })
-    console.log("minize tests done")
-    return
+    return tempGrid
+
 
   }
   //Move a bug already in play
-  move_bug = (startNodeCoord, endNodeCoord, player) => {
+  move_bug = (startNodeCoord, endNodeCoord, currentPlayer) => {
 
 
     this.resetSelectedNode()
 
     var tempGrid = this.state.gameGrid
-    if (tempGrid[startNodeCoord[0]][startNodeCoord[1]].content[0]) {
-      tempGrid[endNodeCoord[0]][endNodeCoord[1]].content.unshift(tempGrid[startNodeCoord[0]][startNodeCoord[1]].content.shift())
-      if (!tempGrid[startNodeCoord[0]][startNodeCoord[1]].content[0]) {
-        tempGrid[startNodeCoord[0]][startNodeCoord[1]].isBufferHex = true
-        //try to remove this flush sync if possible
 
-        this.setState({ gameGrid: tempGrid })
+    tempGrid[endNodeCoord[0]][endNodeCoord[1]].content.unshift(tempGrid[startNodeCoord[0]][startNodeCoord[1]].content.shift())
 
-
-      }
-
-      this.expandGrid(endNodeCoord)
-
+    if (!tempGrid[startNodeCoord[0]][startNodeCoord[1]].content[0]) {
+      tempGrid[startNodeCoord[0]][startNodeCoord[1]].isBufferHex = true
+      //try to remove this flush sync if possible
     }
+
+    tempGrid = this.gridMaintenance(tempGrid, endNodeCoord)
+
+
 
     this.setState({ gameGrid: tempGrid, currentPlayer: (this.state.currentPlayer + 1) % 2 })
 
@@ -384,7 +366,7 @@ class Game extends React.Component {
     //If theres stil a bug left in the selected node, remove it and place it in the enbdNodeCoord
     if (tempPlayers[player].hand[nodeCoordFromHand[1]].content[0]) {
       tempGrid[endNodeCoord[0]][endNodeCoord[1]].content.unshift(tempPlayers[player].hand[nodeCoordFromHand[1]].content.shift())
-      this.expandGrid(endNodeCoord)
+      tempGrid = this.gridMaintenance(tempGrid, endNodeCoord)
     }
     this.setState({ gameGrid: tempGrid, players: tempPlayers, currentPlayer: (this.state.currentPlayer + 1) % 2 })
   }

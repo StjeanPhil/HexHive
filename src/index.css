@@ -53,3 +53,8 @@
     stroke: #000;
     stroke-width: 20;
 }
+
+.availableHex {
+    stroke: yellow;
+    stroke-width: 20;
+}
