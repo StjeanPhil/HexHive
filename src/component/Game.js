@@ -36,20 +36,271 @@ class Game extends React.Component {
     this.setState({ gameGrid: tempGrid })
   }
 
-  //fake function right now but will need 
-  showAvailableNodes = (coord, location) => {
-    var tempGrid = this.state.gameGrid
+
+  availableQueen = (grid, coord) => {
+    // anybufferHex touching the queen
+    var tempGrid = grid
+    const row = coord[0]
+    const col = coord[1]
+
+    if (col > 0 && tempGrid[row][col - 1].isBufferHex) { tempGrid[row][col - 1].isAvailable = true }
+    if (col < (tempGrid[row].length - 1) && tempGrid[row][col + 1].isBufferHex) { tempGrid[row][col + 1].isAvailable = true }
+    if (row > 0 && tempGrid[row - 1][col].isBufferHex) { tempGrid[row - 1][col].isAvailable = true }
+    if (row < (tempGrid.length - 1) && tempGrid[row + 1][col].isBufferHex) { tempGrid[row + 1][col].isAvailable = true }
+
+    if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) != 0 && this.state.isOddRowOffset)) {
+      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1] && tempGrid[row - 1][col - 1].isBufferHex) { tempGrid[row - 1][col - 1].isAvailable = true }
+      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1] && tempGrid[row + 1][col - 1].isBufferHex) { tempGrid[row + 1][col - 1].isAvailable = true }
+    }
+    if (((row % 2) == 1 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
+      if (col < (tempGrid[row].length - 1) && row > 0 && tempGrid[row - 1][col + 1] && tempGrid[row - 1][col + 1].isBufferHex) { tempGrid[row - 1][col + 1].isAvailable = true }
+      if (col < (tempGrid[row].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1] && tempGrid[row + 1][col + 1].isBufferHex) { tempGrid[row + 1][col + 1].isAvailable = true }
+    }
+    return tempGrid
+  }
+  availableSpider = (grid, coord, count, usedCoord) => {
+    //exactly 3 hex from the spider, cant go up bug
+    //toggle avalability when counter hits zero
+    var tempGrid = grid
+    const row = coord[0]
+    const col = coord[1]
+    //recursive ending
+    if (count === 0) {
+      tempGrid[row][col].isAvailable = true
+      return tempGrid
+    }
+    count -= 1
+    usedCoord += coord
+
+    if (col > 0 && tempGrid[row][col - 1] && tempGrid[row][col - 1].isBufferHex) {
+      if (!usedCoord.includes([row, col - 1])) {
+        tempGrid = this.availableSpider(tempGrid, [row, col - 1], count, usedCoord)
+      }
+
+    }
+    if (col < (tempGrid[row].length - 1) && tempGrid[row][col + 1] && tempGrid[row][col + 1].isBufferHex) {
+      if (!usedCoord.includes([row, col + 1])) {
+        tempGrid = this.availableSpider(tempGrid, [row, col + 1], count, usedCoord)
+      }
+    }
+    if (row > 0 && tempGrid[row - 1][col] && tempGrid[row - 1][col].isBufferHex) {
+      if (!usedCoord.includes([row - 1, col])) {
+        tempGrid = this.availableSpider(tempGrid, [row - 1, col], count, usedCoord)
+      }
+    }
+    if (row < (tempGrid.length - 1) && tempGrid[row + 1][col] && tempGrid[row + 1][col].isBufferHex) {
+      if (!usedCoord.includes([row + 1, col])) {
+        tempGrid = this.availableSpider(tempGrid, [row + 1, col], count, usedCoord)
+      }
+    }
+
+    if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) != 0 && this.state.isOddRowOffset)) {
+      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1] && tempGrid[row - 1][col - 1].isBufferHex) {
+        if (!usedCoord.includes([row - 1, col - 1])) {
+          tempGrid = this.availableSpider(tempGrid, [row - 1, col - 1], count, usedCoord)
+        }
+      }
+      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1] && tempGrid[row + 1][col - 1].isBufferHex) {
+        if (!usedCoord.includes([row + 1, col - 1])) {
+          tempGrid = this.availableSpider(tempGrid, [row + 1, col - 1], count, usedCoord)
+        }
+      }
+    }
+    if (((row % 2) == 1 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
+      if (col < (tempGrid[row].length - 1) && row > 0 && tempGrid[row - 1][col + 1] && tempGrid[row - 1][col + 1].isBufferHex) {
+        if (!usedCoord.includes([row - 1, col + 1])) {
+          tempGrid = this.availableSpider(tempGrid, [row - 1, col + 1], count, usedCoord)
+        }
+      }
+      if (col < (tempGrid[row].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1] && tempGrid[row + 1][col + 1].isBufferHex) {
+        if (!usedCoord.includes([row + 1, col + 1])) {
+          tempGrid = this.availableSpider(tempGrid, [row + 1, col + 1], count, usedCoord)
+        }
+      }
+    }
+    return tempGrid
+
+  }
+  //it no works
+  availableGrasshop = (grid, coord) => {
+    // anybufferHex touching the queen
+    var tempGrid = grid
+    const row = coord[0]
+    const col = coord[1]
+
+    if (col > 0 && !tempGrid[row][col - 1].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row, col - 1], [0, -1]) }
+    if (col < (tempGrid[row].length - 1) && !tempGrid[row][col + 1].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row, col + 1], [0, 1]) }
+
+    //offset 
+    if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) !== 0 && this.state.isOddRowOffset)) {
+      if (row > 0 && !tempGrid[row - 1][col].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row - 1, col], [-1, 1]) }
+      if (row < (tempGrid.length - 1) && !tempGrid[row + 1][col].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row + 1, col], [1, 1]) }
+      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1] && !tempGrid[row - 1][col - 1].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row - 1, col - 1], [-1, -1]) }
+      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1] && !tempGrid[row + 1][col - 1].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row + 1, col - 1], [1, -1]) }
+    }
+    //not offset
+    if (((row % 2) !== 0 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
+      if (row > 0 && !tempGrid[row - 1][col].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row - 1, col], [-1, -1]) }
+      if (row < (tempGrid.length - 1) && !tempGrid[row + 1][col].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row + 1, col], [1, -1]) }
+      if (col < (tempGrid[row].length - 1) && row > 0 && tempGrid[row - 1][col + 1] && !tempGrid[row - 1][col + 1].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row - 1, col + 1], [-1, 1]) }
+      if (col < (tempGrid[row].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1] && !tempGrid[row + 1][col + 1].isBufferHex) { tempGrid = this.grasshopJump(tempGrid, [row + 1, col + 1], [1, 1]) }
+    }
+    return tempGrid
+
+  }
+  grasshopJump(grid, coord, direction, callNb) {
+    console.log(coord)
+    console.log(direction)
+    console.log('jump!')
+    var row = coord[0] + direction[0] // row updates everytime
+    var col = coord[1]
+    var tempGrid = grid
+    //if row is stable, col updates everytime
+    if (direction[0] === 0) { col += direction[1] }
+    if (direction[0] !== 0) {
+      //if its an offset row(odd row and odd offset OR  even row and not odd offset)
+      //not offset
+      if (((row % 2) === 0 && this.state.isOddRowOffset) || ((row % 2) !== 0 && !this.state.isOddRowOffset)) {
+        if (direction[1] < 0) {
+          col += direction[1]
+        }
+      }
+      //offset
+      if (((row % 2) != 0 && this.state.isOddRowOffset) || ((row % 2) === 0 && !this.state.isOddRowOffset)) {
+        if (direction[1] > 0) {
+          col += direction[1]
+        }
+      }
+    }
+    if (tempGrid[row][col].isBufferHex) {
+      tempGrid[row][col].isAvailable = true
+      return tempGrid
+    }
+    tempGrid = this.grasshopJump(tempGrid, [row, col], direction)
+    return tempGrid
+  }
+  availableBeetle = (grid, coord) => {
+    var tempGrid = grid
+    const row = coord[0]
+    const col = coord[1]
+
+    if (col > 0) { tempGrid[row][col - 1].isAvailable = true }
+    if (col < (tempGrid[row].length - 1)) { tempGrid[row][col + 1].isAvailable = true }
+    if (row > 0) { tempGrid[row - 1][col].isAvailable = true }
+    if (row < (tempGrid.length - 1)) { tempGrid[row + 1][col].isAvailable = true }
+
+    if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) != 0 && this.state.isOddRowOffset)) {
+      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1]) { tempGrid[row - 1][col - 1].isAvailable = true }
+      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1]) { tempGrid[row + 1][col - 1].isAvailable = true }
+    }
+    if (((row % 2) == 1 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
+      if (col < (tempGrid[row].length - 1) && row > 0 && tempGrid[row - 1][col + 1]) { tempGrid[row - 1][col + 1].isAvailable = true }
+      if (col < (tempGrid[row].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1]) { tempGrid[row + 1][col + 1].isAvailable = true }
+    }
+    return tempGrid
+  }
+  availableAnt = (grid, coord) => {
+    var tempGrid = grid
+    const row = coord[0]
+    const col = coord[1]
+    //recursive ending
+    if (tempGrid[row][col].isAvailable) { return tempGrid }
+    tempGrid[row][col].isAvailable = true
+
+    if (col > 0 && tempGrid[row][col - 1] && tempGrid[row][col - 1].isBufferHex) {
+      tempGrid = this.availableAnt(tempGrid, [row, col - 1])
+    }
+    if (col < (tempGrid[0].length - 1) && tempGrid[row][col + 1] && tempGrid[row][col + 1].isBufferHex) {
+      tempGrid = this.availableAnt(tempGrid, [row, col + 1])
+    }
+    if (row > 0 && tempGrid[row - 1][col] && tempGrid[row - 1][col].isBufferHex) {
+      tempGrid = this.availableAnt(tempGrid, [row - 1, col])
+    }
+    if (row < (tempGrid.length - 1) && tempGrid[row + 1][col] && tempGrid[row + 1][col].isBufferHex) {
+      tempGrid = this.availableAnt(tempGrid, [row + 1, col])
+    }
+
+    if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) != 0 && this.state.isOddRowOffset)) {
+      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1] && tempGrid[row - 1][col - 1].isBufferHex) {
+        tempGrid = this.availableAnt(tempGrid, [row - 1, col - 1])
+      }
+      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1] && tempGrid[row + 1][col - 1].isBufferHex) {
+        tempGrid = this.availableAnt(tempGrid, [row + 1, col - 1])
+      }
+    }
+    if (((row % 2) == 1 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
+      if (col < (tempGrid[0].length - 1) && row > 0 && tempGrid[row - 1][col + 1] && tempGrid[row - 1][col + 1].isBufferHex) {
+        tempGrid = this.availableAnt(tempGrid, [row - 1, col + 1])
+      }
+      if (col < (tempGrid[0].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1] && tempGrid[row + 1][col + 1].isBufferHex) {
+        tempGrid = this.availableAnt(tempGrid, [row + 1, col + 1])
+      }
+    }
+    return tempGrid
+  }
+
+  //works for now but still WIP -> need team recon
+  availableForPlacing = (grid, coord, currentPlayer) => {
+    //need to check its only touching its teammates
+    var tempGrid = grid
     for (var i = 0; i < tempGrid.length; i++) {
       for (var j = 0; j < tempGrid[0].length; j++) {
-        if (tempGrid[i][j]) {
+        if (tempGrid[i][j] && tempGrid[i][j].isBufferHex) {
           tempGrid[i][j].isAvailable = true
         }
       }
     }
-    this.setState({ gameGrid: tempGrid })
+    return tempGrid
   }
-  //fake function right now but will need 
+
+  //wip
+  showAvailableNodes = (coord, location) => {
+
+    var tempGrid = this.state.gameGrid
+
+    if (location === 'hand') {
+      //Show avalability of new hex for players [currentplayer]
+      //  any bufferHex touching only current player's  hexs
+      tempGrid = this.availableForPlacing(tempGrid, coord, this.state.currentPlayer)
+
+    }
+    if (location === 'hive') {
+      var bug = tempGrid[coord[0]][coord[1]].content[0]
+
+      //console.log(bug)
+
+      if (bug.name === 'Queen') {
+        console.log('queen procedure')
+        tempGrid = this.availableQueen(tempGrid, coord)
+      }
+      if (bug.name === 'Spider') {
+        console.log('spider procedure')
+        const count = 3
+        const usedCoord = []
+        tempGrid = this.availableSpider(tempGrid, coord, count, usedCoord)
+      }
+      if (bug.name === 'Beetle') {
+        console.log('beetle procedure')
+        tempGrid = this.availableBeetle(tempGrid, coord)
+      }
+      //WIP
+      if (bug.name === 'Grasshop') {
+        console.log('Grasshop procedure')
+        tempGrid = this.availableGrasshop(tempGrid, coord)
+      }
+      if (bug.name === 'Ant') {
+        console.log('ant procedure')
+        tempGrid = this.availableAnt(tempGrid, coord)
+      }
+
+
+    }
+    return tempGrid
+
+  }
+  //Remove the Available status on all the nodes of the hive
   hideAvailableNodes = () => {
+
     var tempGrid = this.state.gameGrid
     for (var i = 0; i < tempGrid.length; i++) {
       for (var j = 0; j < tempGrid[0].length; j++) {
@@ -91,20 +342,21 @@ class Game extends React.Component {
           players: tempPlayers
         })
       });
-      //console.log("Reset Selected Node::")
-      //console.log(this.state.selectedNode)
+
 
     }
   }
   setSelectedNode = (coord, isInHand) => {
-
+    this.resetSelectedNode()
     var tempSelectedNode = this.state.selectedNode
     var tempGrid = this.state.gameGrid
     //console.log("isInHand: " + isInHand)
+    tempGrid = this.showAvailableNodes(coord, isInHand)
+
     isInHand = (isInHand === 'hand' ? true : false)
 
     //remove the oldNode
-    this.resetSelectedNode()
+
 
 
     //Select the new Node
@@ -123,7 +375,7 @@ class Game extends React.Component {
 
 
     flushSync(() => {
-      this.setState({ selectedNode: tempSelectedNode })
+      this.setState({ gameGrid: tempGrid, selectedNode: tempSelectedNode })
     })
     //console.log("Select Selected Node:")
     //console.log(this.state.selectedNode)
@@ -136,14 +388,15 @@ class Game extends React.Component {
       //If there was no selected node, select the clicked node
       if (!this.state.selectedNode.isSelect) {
         if (!this.state.gameGrid[coord[0]][coord[1]].isBufferHex) {
-          console.log("hit")
           this.setSelectedNode(coord, 'hive')
-          this.showAvailableNodes(coord, 'hive')
         }
         return
       }
       //if theres already a selected node,
       if (this.state.selectedNode.isSelect) {
+
+
+
         //if the selected node is in the player hand
         if (this.state.selectedNode.isInHand) {
           //if the clicked node is a valid move for the selected node
@@ -157,6 +410,14 @@ class Game extends React.Component {
           }
         }
         if (!this.state.selectedNode.isInHand) {
+
+          //Clicking a second time on a node de-select it
+          if (coord[0] === this.state.selectedNode.coord[0] && coord[1] === this.state.selectedNode.coord[1]) {
+
+            this.resetSelectedNode()
+            return
+          }
+
           //if the clicked node a valid move for the selected ndoe
           if (this.state.gameGrid[coord[0]][coord[1]].isAvailable) {
             //move selected node at clicked node location
@@ -165,9 +426,9 @@ class Game extends React.Component {
           }
           //If its not a valid move
           if (!this.state.gameGrid[coord[0]][coord[1]].isAvailable) {
+            if (coord === this.state.selectedNode.coord) { this.resetSelectedNode() }
             //clicked node is now selected node
             this.setSelectedNode(coord, 'hive')
-            this.showAvailableNodes(coord, 'hive')
             return
           }
         }
@@ -175,15 +436,11 @@ class Game extends React.Component {
     }
     if (location === 'hand') {
       this.setSelectedNode(coord, 'hand')
-      this.showAvailableNodes(coord, 'hand')
       return
-
     }
-
   }
   gridMaintenance = (grid, lastPlayedNode) => {
 
-    console.log(lastPlayedNode)
     var { tempGrid, tempIsOddRowOffset } = this.expandGrid(grid, lastPlayedNode)
     tempGrid = this.removeUnconnectedNodes(tempGrid, tempIsOddRowOffset)
     tempGrid = this.keepGridSmall(tempGrid)
@@ -337,8 +594,8 @@ class Game extends React.Component {
   //Move a bug already in play
   move_bug = (startNodeCoord, endNodeCoord, currentPlayer) => {
 
-
     this.resetSelectedNode()
+
 
     var tempGrid = this.state.gameGrid
 
@@ -369,6 +626,7 @@ class Game extends React.Component {
       tempGrid = this.gridMaintenance(tempGrid, endNodeCoord)
     }
     this.setState({ gameGrid: tempGrid, players: tempPlayers, currentPlayer: (this.state.currentPlayer + 1) % 2 })
+
   }
   //check passedGamegrid for complete and singular connection of the the bugs
   verifyConnection = (possibleGameGrid) => { }
