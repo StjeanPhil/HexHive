@@ -22,10 +22,17 @@ const Hex = (props) => {
 
   //used to show the multiple bugs of the same node
   const content = () => {
+    //console.log(node.content)
     var toReturn = []
+
     for (var i = 0; i < node.content.length; i++) {
-      toReturn.push(node.content[i].name)
+      if (node.content[i]) {
+        toReturn.push(node.content[i].name)
+      }
+      // /toReturn.push(node.content[i].name)
+
     }
+
     return toReturn
   }
 

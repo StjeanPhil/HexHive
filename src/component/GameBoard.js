@@ -12,7 +12,7 @@ import Bug from '../classes/Bug'
 import Player from '../classes/Player'
 
 
-class Game extends React.Component {
+class GameBoard extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -25,7 +25,8 @@ class Game extends React.Component {
         "coord": ['', '']
       },
       currentPlayer: 0,
-      isOddRowOffset: false
+      isOddRowOffset: false,
+      nbBugs: 0
     }
   }
 
@@ -66,7 +67,7 @@ class Game extends React.Component {
     const col = coord[1]
     //recursive ending
     if (count === 0) {
-      tempGrid[row][col].isAvailable = true
+      tempGrid[row][col].isAvailable = this.hiveIntegrityCheck(tempGrid, usedCoord[0], coord)
       return tempGrid
     }
     count -= 1
@@ -123,7 +124,7 @@ class Game extends React.Component {
   }
   //it no works
   availableGrasshop = (grid, coord) => {
-    // anybufferHex touching the queen
+
     var tempGrid = grid
     const row = coord[0]
     const col = coord[1]
@@ -149,26 +150,23 @@ class Game extends React.Component {
 
   }
   grasshopJump(grid, coord, direction, callNb) {
-    console.log(coord)
-    console.log(direction)
-    console.log('jump!')
     var row = coord[0] + direction[0] // row updates everytime
     var col = coord[1]
     var tempGrid = grid
     //if row is stable, col updates everytime
-    if (direction[0] === 0) { col += direction[1] }
+    if (direction[0] === 0) { col = (col === '' ? 1 : col + direction[1]) }
     if (direction[0] !== 0) {
       //if its an offset row(odd row and odd offset OR  even row and not odd offset)
       //not offset
       if (((row % 2) === 0 && this.state.isOddRowOffset) || ((row % 2) !== 0 && !this.state.isOddRowOffset)) {
         if (direction[1] < 0) {
-          col += direction[1]
+          col = (col === '' ? 1 : col + direction[1])
         }
       }
       //offset
       if (((row % 2) != 0 && this.state.isOddRowOffset) || ((row % 2) === 0 && !this.state.isOddRowOffset)) {
         if (direction[1] > 0) {
-          col += direction[1]
+          col = (col === '' ? 1 : col + direction[1])
         }
       }
     }
@@ -184,58 +182,85 @@ class Game extends React.Component {
     const row = coord[0]
     const col = coord[1]
 
-    if (col > 0) { tempGrid[row][col - 1].isAvailable = true }
-    if (col < (tempGrid[row].length - 1)) { tempGrid[row][col + 1].isAvailable = true }
-    if (row > 0) { tempGrid[row - 1][col].isAvailable = true }
-    if (row < (tempGrid.length - 1)) { tempGrid[row + 1][col].isAvailable = true }
+    if (col > 0) {
+      tempGrid[row][col - 1].isAvailable = this.hiveIntegrityCheck(grid, coord, [row, col - 1])
+      //tempGrid[row][col - 1].isAvailable = true 
+    }
+    if (col < (tempGrid[row].length - 1)) {
+      tempGrid[row][col + 1].isAvailable = this.hiveIntegrityCheck(grid, coord, [row, col + 1])
+      // tempGrid[row][col + 1].isAvailable = true
+    }
+    if (row > 0) {
+      tempGrid[row - 1][col].isAvailable = this.hiveIntegrityCheck(grid, coord, [row - 1, col])
+      // tempGrid[row - 1][col].isAvailable = true
+    }
+    if (row < (tempGrid.length - 1)) {
+      tempGrid[row + 1][col].isAvailable = this.hiveIntegrityCheck(grid, coord, [row + 1, col])
+      // tempGrid[row + 1][col].isAvailable = true 
+    }
 
     if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) != 0 && this.state.isOddRowOffset)) {
-      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1]) { tempGrid[row - 1][col - 1].isAvailable = true }
-      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1]) { tempGrid[row + 1][col - 1].isAvailable = true }
+      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1]) {
+        tempGrid[row - 1][col - 1].isAvailable = this.hiveIntegrityCheck(grid, coord, [row - 1, col - 1])
+        // tempGrid[row - 1][col - 1].isAvailable = true
+      }
+      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1]) {
+        tempGrid[row + 1][col - 1].isAvailable = this.hiveIntegrityCheck(grid, coord, [row + 1, col - 1])
+        //tempGrid[row + 1][col - 1].isAvailable = true
+      }
     }
     if (((row % 2) == 1 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
-      if (col < (tempGrid[row].length - 1) && row > 0 && tempGrid[row - 1][col + 1]) { tempGrid[row - 1][col + 1].isAvailable = true }
-      if (col < (tempGrid[row].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1]) { tempGrid[row + 1][col + 1].isAvailable = true }
+      if (col < (tempGrid[row].length - 1) && row > 0 && tempGrid[row - 1][col + 1]) {
+        tempGrid[row - 1][col + 1].isAvailable = this.hiveIntegrityCheck(grid, coord, [row - 1, col + 1])
+        //tempGrid[row - 1][col + 1].isAvailable = true
+      }
+      if (col < (tempGrid[row].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1]) {
+        tempGrid[row + 1][col + 1].isAvailable = this.hiveIntegrityCheck(grid, coord, [row + 1, col + 1])
+        //tempGrid[row + 1][col + 1].isAvailable = true
+      }
     }
     return tempGrid
   }
-  availableAnt = (grid, coord) => {
+  availableAnt = (grid, coord, usedCoord, startNodeCoord) => {
     var tempGrid = grid
     const row = coord[0]
     const col = coord[1]
     //recursive ending
-    if (tempGrid[row][col].isAvailable) { return tempGrid }
-    tempGrid[row][col].isAvailable = true
+    if (usedCoord.includes(coord)) { return tempGrid }
+    usedCoord += coord
+
+    tempGrid[row][col].isAvailable = this.hiveIntegrityCheck(tempGrid, startNodeCoord, coord)
 
     if (col > 0 && tempGrid[row][col - 1] && tempGrid[row][col - 1].isBufferHex) {
-      tempGrid = this.availableAnt(tempGrid, [row, col - 1])
+      tempGrid = this.availableAnt(tempGrid, [row, col - 1], usedCoord, startNodeCoord)
     }
     if (col < (tempGrid[0].length - 1) && tempGrid[row][col + 1] && tempGrid[row][col + 1].isBufferHex) {
-      tempGrid = this.availableAnt(tempGrid, [row, col + 1])
+      tempGrid = this.availableAnt(tempGrid, [row, col + 1], usedCoord, startNodeCoord)
     }
     if (row > 0 && tempGrid[row - 1][col] && tempGrid[row - 1][col].isBufferHex) {
-      tempGrid = this.availableAnt(tempGrid, [row - 1, col])
+      tempGrid = this.availableAnt(tempGrid, [row - 1, col], usedCoord, startNodeCoord)
     }
     if (row < (tempGrid.length - 1) && tempGrid[row + 1][col] && tempGrid[row + 1][col].isBufferHex) {
-      tempGrid = this.availableAnt(tempGrid, [row + 1, col])
+      tempGrid = this.availableAnt(tempGrid, [row + 1, col], usedCoord, startNodeCoord)
     }
 
     if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) != 0 && this.state.isOddRowOffset)) {
       if (col > 0 && row > 0 && tempGrid[row - 1][col - 1] && tempGrid[row - 1][col - 1].isBufferHex) {
-        tempGrid = this.availableAnt(tempGrid, [row - 1, col - 1])
+        tempGrid = this.availableAnt(tempGrid, [row - 1, col - 1], usedCoord, startNodeCoord)
       }
       if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1] && tempGrid[row + 1][col - 1].isBufferHex) {
-        tempGrid = this.availableAnt(tempGrid, [row + 1, col - 1])
+        tempGrid = this.availableAnt(tempGrid, [row + 1, col - 1], usedCoord, startNodeCoord)
       }
     }
     if (((row % 2) == 1 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
       if (col < (tempGrid[0].length - 1) && row > 0 && tempGrid[row - 1][col + 1] && tempGrid[row - 1][col + 1].isBufferHex) {
-        tempGrid = this.availableAnt(tempGrid, [row - 1, col + 1])
+        tempGrid = this.availableAnt(tempGrid, [row - 1, col + 1], usedCoord, startNodeCoord)
       }
       if (col < (tempGrid[0].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1] && tempGrid[row + 1][col + 1].isBufferHex) {
-        tempGrid = this.availableAnt(tempGrid, [row + 1, col + 1])
+        tempGrid = this.availableAnt(tempGrid, [row + 1, col + 1], usedCoord, startNodeCoord)
       }
     }
+
     return tempGrid
   }
 
@@ -252,9 +277,56 @@ class Game extends React.Component {
     }
     return tempGrid
   }
+  //returns true of false
+  hiveIntegrityCheck = (grid, startNodeCoord, endNodeCoord) => {
+    return true
 
+    //clone and not reference the grid
+    let testGrid = JSON.parse(JSON.stringify(grid));
+
+    testGrid[endNodeCoord[0]][endNodeCoord[1]].content.unshift(testGrid[startNodeCoord[0]][startNodeCoord[1]].content.shift())
+
+    console.log(testGrid[startNodeCoord[0]][startNodeCoord[1]].content)
+    console.log(testGrid[endNodeCoord[0]][endNodeCoord[1]].content)
+
+    var connectedBugsCount = this.countConnectedBugs(testGrid, endNodeCoord, [])
+    console.log(this.state.nbBugs)
+    console.log(connectedBugsCount)
+
+    if (connectedBugsCount === this.state.nbBugs) { return true }
+    return false
+  }
+  //return a count of how many bugs are connected to this one
+  countConnectedBugs = (tempGrid, coord, count, countedCoords) => {
+
+    count = Number(count) + tempGrid[coord[0]][coord[1]].content.length
+
+    countedCoords += coord
+
+    const row = coord[0]
+    const col = coord[1]
+
+    if (col > 0 && tempGrid[row][col - 1] && !tempGrid[row][col - 1].isBufferHex && !countedCoords.includes([row, col - 1])) { count += this.countConnectedBugs(tempGrid, [row, col - 1], count, countedCoords) }
+    if (col < (tempGrid[row].length - 1) && tempGrid[row][col + 1] && !tempGrid[row][col + 1].isBufferHex && !countedCoords.includes([row, col + 1])) { count += this.countConnectedBugs(tempGrid, [row, col + 1], count, countedCoords) }
+    if (row > 0 && tempGrid[row - 1][col] && !tempGrid[row - 1][col].isBufferHex && !countedCoords.includes([row - 1, col])) { count += this.countConnectedBugs(tempGrid, [row - 1, col], count, countedCoords) }
+    if (row < (tempGrid.length - 1) && tempGrid[row + 1][col] && !tempGrid[row + 1][col].isBufferHex && !countedCoords.includes([row + 1, col])) { count += this.countConnectedBugs(tempGrid, [row + 1, col], count, countedCoords) }
+
+    if (((row % 2) == 0 && !this.state.isOddRowOffset) || ((row % 2) != 0 && this.state.isOddRowOffset)) {
+      if (col > 0 && row > 0 && tempGrid[row - 1][col - 1] && !tempGrid[row - 1][col - 1].isBufferHex && !countedCoords.includes([row - 1, col - 1])) { count += this.countConnectedBugs(tempGrid, [row - 1, col - 1], count, countedCoords) }
+      if (col > 0 && row < (tempGrid.length - 1) && tempGrid[row + 1][col - 1] && !tempGrid[row + 1][col - 1].isBufferHex && !countedCoords.includes([row + 1, col - 1])) { count += this.countConnectedBugs(tempGrid, [row + 1, col - 1], count, countedCoords) }
+    }
+    if (((row % 2) == 1 && !this.state.isOddRowOffset) || ((row % 2) == 0 && this.state.isOddRowOffset)) {
+      if (col < (tempGrid[row].length - 1) && row > 0 && tempGrid[row - 1][col + 1] && !tempGrid[row - 1][col + 1].isBufferHex && !countedCoords.includes([row - 1, col + 1])) { count += this.countConnectedBugs(tempGrid, [row - 1, col + 1], count, countedCoords) }
+      if (col < (tempGrid[row].length - 1) && row < (tempGrid.length - 1) && tempGrid[row + 1][col + 1] && !tempGrid[row + 1][col + 1].isBufferHex && !countedCoords.includes([row + 1, col + 1])) { count += this.countConnectedBugs(tempGrid, [row + 1, col + 1], count, countedCoords) }
+    }
+    console.log('count is now at: ' + count)
+    return count
+
+  }
   //wip
-  showAvailableNodes = (coord, location) => {
+  showAvailableNodes = (coord, location,) => {
+    console.log('selectednode:')
+    console.log(this.state.selectedNode)
 
     var tempGrid = this.state.gameGrid
 
@@ -270,6 +342,7 @@ class Game extends React.Component {
       //console.log(bug)
 
       if (bug.name === 'Queen') {
+
         console.log('queen procedure')
         tempGrid = this.availableQueen(tempGrid, coord)
       }
@@ -283,17 +356,20 @@ class Game extends React.Component {
         console.log('beetle procedure')
         tempGrid = this.availableBeetle(tempGrid, coord)
       }
-      //WIP
       if (bug.name === 'Grasshop') {
+
         console.log('Grasshop procedure')
         tempGrid = this.availableGrasshop(tempGrid, coord)
       }
       if (bug.name === 'Ant') {
+
         console.log('ant procedure')
-        tempGrid = this.availableAnt(tempGrid, coord)
+        const usedCoord = []
+        const startNodeCoord = coord
+
+
+        tempGrid = this.availableAnt(tempGrid, coord, usedCoord, startNodeCoord)
       }
-
-
     }
     return tempGrid
 
@@ -328,6 +404,8 @@ class Game extends React.Component {
       if (!this.state.selectedNode.isInHand) {
         tempGrid[this.state.selectedNode.coord[0]][this.state.selectedNode.coord[1]].isSelected = false
       }
+      console.log(this.state.selectedNode.coord)
+      console.log('reseted')
       this.hideAvailableNodes()
 
       //Flush sync makes sure the selectedNode state gets reset before any other code goes through
@@ -342,22 +420,25 @@ class Game extends React.Component {
           players: tempPlayers
         })
       });
-
-
     }
   }
   setSelectedNode = (coord, isInHand) => {
+    console.log("setting coord " + coord)
+
     this.resetSelectedNode()
     var tempSelectedNode = this.state.selectedNode
     var tempGrid = this.state.gameGrid
-    //console.log("isInHand: " + isInHand)
     tempGrid = this.showAvailableNodes(coord, isInHand)
 
     isInHand = (isInHand === 'hand' ? true : false)
+    //Take note of the new SelectedNode
+    tempSelectedNode.isSelect = true
+    tempSelectedNode.coord = coord
 
-    //remove the oldNode
-
-
+    tempSelectedNode.isInHand = isInHand
+    flushSync(() => {
+      this.setState({ selectedNode: tempSelectedNode })
+    })
 
     //Select the new Node
     if (!isInHand) {
@@ -367,18 +448,10 @@ class Game extends React.Component {
       var tempPlayers = this.state.players
       tempPlayers[this.state.currentPlayer].hand[coord[1]].isSelected = true
     }
-    //Take note of the new SelectedNode
-    tempSelectedNode.isSelect = true
-    tempSelectedNode.coord = coord
-    tempSelectedNode.isInHand = isInHand
-
-
 
     flushSync(() => {
-      this.setState({ gameGrid: tempGrid, selectedNode: tempSelectedNode })
+      this.setState({ gameGrid: tempGrid })
     })
-    //console.log("Select Selected Node:")
-    //console.log(this.state.selectedNode)
 
   }
   //handle the clicking of an hex whether in hand or in board
@@ -388,6 +461,7 @@ class Game extends React.Component {
       //If there was no selected node, select the clicked node
       if (!this.state.selectedNode.isSelect) {
         if (!this.state.gameGrid[coord[0]][coord[1]].isBufferHex) {
+
           this.setSelectedNode(coord, 'hive')
         }
         return
@@ -426,9 +500,11 @@ class Game extends React.Component {
           }
           //If its not a valid move
           if (!this.state.gameGrid[coord[0]][coord[1]].isAvailable) {
-            if (coord === this.state.selectedNode.coord) { this.resetSelectedNode() }
+
             //clicked node is now selected node
-            this.setSelectedNode(coord, 'hive')
+
+            this.resetSelectedNode()
+            //this.setSelectedNode(coord, 'hive')
             return
           }
         }
@@ -454,6 +530,7 @@ class Game extends React.Component {
     //activate the clicked node
     tempGrid[row][col].isBufferHex = false
 
+
     //If the first col is clicked, add col at the start of row arrays
     if (col === 0) {
       //For all the rows move add one col at the start
@@ -461,11 +538,7 @@ class Game extends React.Component {
         tempGrid[i].unshift("")
       }
       //the clicked Hex is now situated 1 col further
-      col += 1
-      //dont forget to offset the selected node position to keep track of it
-      var tempSelectedNode = this.state.selectedNode
-      tempSelectedNode.coord[1] += 1
-      this.setState({ selectedNode: tempSelectedNode })
+      col = (col === '' ? 1 : col + 1)
     }
     //if the first row is clicked, add a new empty row as the starting row
     if (row === 0) {
@@ -473,16 +546,7 @@ class Game extends React.Component {
       tempGrid.unshift(newRow)
       //the clicked Hex is now situated 1 row down
       tempIsOddRowOffset = !tempIsOddRowOffset
-      //Could probs re-code to not have to use flushsync here ---
-      flushSync(() => {
-        this.setState({ isOddRowOffset: tempIsOddRowOffset })
-      })
-      console.log("switch offset")
       row += 1
-      //dont forget to offset the selected node position to keep track of it
-      var tempSelectedNode = this.state.selectedNode
-      tempSelectedNode.coord[0] = 1
-      this.setState({ selectedNode: tempSelectedNode })
 
     }
     if (col === (tempGrid[0].length - 1)) {
@@ -493,6 +557,12 @@ class Game extends React.Component {
     if (row === (tempGrid.length - 1)) {
       tempGrid.push(new Array(tempGrid[0].length))
     }
+    //Could probs re-code to not have to use flushsync here ---
+    flushSync(() => {
+      this.setState({ isOddRowOffset: tempIsOddRowOffset })
+    })
+
+
     //Add nodes around clicked node
     if ((((row % 2) !== 0) && !tempIsOddRowOffset) || (((row % 2) === 0) && tempIsOddRowOffset)) {
       if (!tempGrid[row - 1][col]) { tempGrid[row - 1][col] = new Node() }
@@ -585,17 +655,12 @@ class Game extends React.Component {
     if (isEmpty) {
       for (var i = 0; i < tempGrid.length; i++) { tempGrid[i].pop() }
     }
-    //console.log("minize tests done")
-
     return tempGrid
-
 
   }
   //Move a bug already in play
   move_bug = (startNodeCoord, endNodeCoord, currentPlayer) => {
-
     this.resetSelectedNode()
-
 
     var tempGrid = this.state.gameGrid
 
@@ -603,15 +668,11 @@ class Game extends React.Component {
 
     if (!tempGrid[startNodeCoord[0]][startNodeCoord[1]].content[0]) {
       tempGrid[startNodeCoord[0]][startNodeCoord[1]].isBufferHex = true
-      //try to remove this flush sync if possible
     }
 
     tempGrid = this.gridMaintenance(tempGrid, endNodeCoord)
 
-
-
     this.setState({ gameGrid: tempGrid, currentPlayer: (this.state.currentPlayer + 1) % 2 })
-
 
   }
   //Place a bug from the player's hand
@@ -625,13 +686,9 @@ class Game extends React.Component {
       tempGrid[endNodeCoord[0]][endNodeCoord[1]].content.unshift(tempPlayers[player].hand[nodeCoordFromHand[1]].content.shift())
       tempGrid = this.gridMaintenance(tempGrid, endNodeCoord)
     }
-    this.setState({ gameGrid: tempGrid, players: tempPlayers, currentPlayer: (this.state.currentPlayer + 1) % 2 })
+    this.setState({ gameGrid: tempGrid, players: tempPlayers, currentPlayer: (this.state.currentPlayer + 1) % 2, nbBugs: this.state.nbBugs + 1 })
 
   }
-  //check passedGamegrid for complete and singular connection of the the bugs
-  verifyConnection = (possibleGameGrid) => { }
-
-
 
   render() {
     return (
@@ -640,7 +697,6 @@ class Game extends React.Component {
         <div className='Game'>
 
           <Hive gameGrid={this.state.gameGrid} isOddRowOffset={this.state.isOddRowOffset} hexClick={this.hexClick} />
-
 
           <div className='playerContainer'>
             <PlayerCard player={this.state.players[0]} rules={this.state.rules} hexClick={this.hexClick} />
@@ -656,6 +712,4 @@ class Game extends React.Component {
 
 }
 
-export default Game
-
-//this.expandGrid([0, 0])
+export default GameBoard
