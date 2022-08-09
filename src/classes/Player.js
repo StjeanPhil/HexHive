@@ -23,7 +23,7 @@ export default class Player {
         this.name = name
         this.color = color
         this.hand = this.startingHand
-        if (starts) { this.isTurn = true }
+        this.isTurn = starts
     }
     //Put Back all bugs in hand
     reset_Hand() {

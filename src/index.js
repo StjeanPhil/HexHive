@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import GameBoard from './component/GameBoard';
+import GameBoard from './component/GameBoard.js';
 import './index.css'
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

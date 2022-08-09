@@ -1,8 +1,5 @@
 const getHexaPts = (TotalLength, TotalHeight, NbHexX, NbHexY, isOddRowOffset, oddRowBorder) => {
 
-
-
-
     var hexWidth = 0;
     var size = 0;
     var hexHeight = 0;
@@ -39,17 +36,14 @@ const getHexaPts = (TotalLength, TotalHeight, NbHexX, NbHexY, isOddRowOffset, od
     (NbHexX >= (NbHexY * 0.866) ? getHexSizing('x') : getHexSizing('y'))
 
 
-
-
-
-
-
     //Get CenterPts :[horizon,vertical]    
     const centerPts = Array(NbHexY).fill().map(entry => Array(NbHexX))
     for (let i = 0; i < NbHexY; i++) {
         var adjustWidth = 0;
         if (NbHexY > 1) {
-            if ((isOddRowOffset == true && !(i % 2)) || (isOddRowOffset == false && (i % 2))) { adjustWidth = hexWidth / 2 }
+            if ((isOddRowOffset && !(i % 2)) || (!isOddRowOffset && (i % 2))) {
+                adjustWidth = hexWidth / 2
+            }
         }
 
         for (let j = 0; j < NbHexX; j++) {
@@ -60,9 +54,6 @@ const getHexaPts = (TotalLength, TotalHeight, NbHexX, NbHexY, isOddRowOffset, od
     }
     //console.log(centerPts)
     //console.log("centerPts"+centerPts[0])
-
-
-
 
 
 

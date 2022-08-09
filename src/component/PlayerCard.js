@@ -8,7 +8,7 @@ import Hex from './Hex'
 
 const PlayerCard = (props) => {
 
-  const rules = props.rules
+  //const rules = props.rules
   const hexClick = props.hexClick
 
   const player = props.player
@@ -22,7 +22,8 @@ const PlayerCard = (props) => {
   const { hexaPts, centerPts } = getHexaPts(TotalLength, TotalHeight, NbHexX, NbHexY, 'true', 'true')
 
   const clickHandler = (coord) => {
-    hexClick(coord, 'hand')
+    if (player.isTurn) { hexClick(coord, 'hand') }
+
   }
 
   return (
