@@ -322,7 +322,7 @@ const availableForPlacing = (grid, player, isOddRowOffset, bugCounter) => {
 
 
 
-// under is a recursive buggy wip to the singular hie problem
+/* // under is a recursive buggy wip to the singular hie problem
 
 //tempGrid[row][col - 1].isAvailable = hiveIntegrityCheck(tempGrid, coord, [row, col - 1], isOddRowOffset, bugCounter)
 //returns true of false
@@ -421,38 +421,98 @@ const countConnectedNodes = (tempGrid, row, col, usedCoords, isOddRowOffset) => 
     }
     console.log(usedCoords)
     return usedCoords
-}
+} */
 
-/* const hiveIntegrityCheck = (grid, startNodeCoord, endNodeCoord, isOddRowOffset, bugCounter) => {
-    //return true
+const hiveIntegrityCheck = (grid, startNodeCoord, endNodeCoord, isOddRowOffset) => {
+    console.log('checking: ' + endNodeCoord)
+
+    if (!physicalfitCheck(grid, startNodeCoord, endNodeCoord, isOddRowOffset)) { return false }
+
+
 
 
     var testGrid = _.cloneDeep(grid)
-    //switch both node first content
+    //switch the place of both nodes passed through props
     testGrid[endNodeCoord[0]][endNodeCoord[1]].content.unshift(testGrid[startNodeCoord[0]][startNodeCoord[1]].content.shift())
     testGrid[endNodeCoord[0]][endNodeCoord[1]].isBufferHex = false
     testGrid[startNodeCoord[0]][startNodeCoord[1]].isBufferHex = true
+    //make sure the new grid is in a single part
+    var hiveParts = []  //contains all the parts of the hive we are currently tracking 
 
-    for (var i = 0; i < testGrid.length; i++) {
-        for (var j = 0; j < testGrid[0].length; j++) {
+    for (var i = 0; i < testGrid.length; i++) {    //For every row,
+        for (var j = 0; j < testGrid[0].length; j++) {        //for every col,
 
-            if (testGrid[i][j] && !testGrid[i][j].isBufferHex) {
+            if (testGrid[i][j] && !testGrid[i][j].isBufferHex) {            //if there's a node containing bug(s),check if he touches  any part of the hive
 
+                var nbPartAddedTo = []  //array of all the index of the hiveParts we added the current node to
+                var addedTo = false     //switch to tell if we added the current node to the last hivePart
+
+                for (var x = 0; x < hiveParts.length; x++) {    //for every part of the hive
+
+                    addedTo = false     //turn the switch off
+                    const startParts = hiveParts[x].length
+
+                    for (var y = 0; y < startParts; y++) { //for all the nodes of the current hivePart
+                        if (hiveParts[x][y][0] === (i - 1)) { //we check if it is the i above the current i
+                            if ((!(i % 2) && isOddRowOffset) || ((i % 2) && !isOddRowOffset)) {
+
+
+                                if (hiveParts[x][y][1] === (j + 1)) {     /// -1, +1
+                                    hiveParts[x].push([i, j])
+                                    addedTo = true
+                                }
+                            }
+                            if ((!(i % 2) && !isOddRowOffset) || ((i % 2) && isOddRowOffset)) {
+                                if (hiveParts[x][y][1] === (j - 1)) {     //-1, -1
+                                    hiveParts[x].push([i, j])
+                                    addedTo = true
+                                }
+                            }
+                            if (hiveParts[x][y][1] === j) {               //-1, 0
+                                hiveParts[x].push([i, j])
+                                addedTo = true
+                            }
+                        }
+                        if (hiveParts[x][y][0] === i) {   //check if it us the same i
+                            if ((hiveParts[x][y][1] === (j + 1)) || (hiveParts[x][y][1] === (j - 1))) {   //0, +1  && 0, -1
+                                hiveParts[x].push([i, j])
+                                addedTo = true
+                            }
+                        }
+                    }
+                    if (addedTo) {
+                        console.log('add to one more')
+                        nbPartAddedTo.push(x)
+                    }  //if the swtich is on, we added the node  we checked: save  index
+                }
+                if (nbPartAddedTo.length === 0) {   //if current node hasnt been added or is the first node, create a new/the first part to place it
+                    console.log("creation of part #" + hiveParts.length)
+                    hiveParts[hiveParts.length] = []
+                    hiveParts[hiveParts.length - 1].push([i, j])
+                }
+                if (nbPartAddedTo.length > 1) {     //if current node has been added more than once, join all the hivePart connected by the current node
+                    for (var z = 1; z < nbPartAddedTo.length; z++) {
+                        for (var a = 0; a < hiveParts[nbPartAddedTo[z]].length; a = 0) {
+                            console.log('popped one')
+                            hiveParts[nbPartAddedTo[0]].push(hiveParts[nbPartAddedTo[z]].pop())
+                        }
+                    }
+                }
             }
-
-
-
         }
     }
-
-
+    var nbPart = 0
+    for (var o = 0; o < hiveParts.length; o++) {
+        if (hiveParts[o].length > 0) { nbPart += 1 }
+    }
+    console.log(hiveParts)
+    if (nbPart === 1) {
+        console.log('working: ' + endNodeCoord)
+        return true
+    }
+    console.log('failing: ' + endNodeCoord)
+    return false
 }
- */
-
-
-
-
-
 
 //check around a node to see if its touching another bug
 const checkAround = (tempGrid, coord, isOddRowOffset) => {
@@ -460,8 +520,8 @@ const checkAround = (tempGrid, coord, isOddRowOffset) => {
     const col = coord[1]
 
     if (col > 0 && tempGrid[row][col - 1] && tempGrid[row][col - 1].content.length > 0) { return true }
-
     if (col < (tempGrid[row].length - 1) && tempGrid[row][col + 1] && !tempGrid[row][col + 1].content.length === 0) { return true }
+
     if (row > 0 && tempGrid[row - 1][col] && tempGrid[row - 1][col].content.length > 0) { return true }
     if (row < (tempGrid.length - 1) && tempGrid[row + 1][col] && tempGrid[row + 1][col].content.length > 0) { return true }
 
@@ -476,4 +536,104 @@ const checkAround = (tempGrid, coord, isOddRowOffset) => {
     }
     return false
 }
+//check if the movement could be physicaly possible
+const physicalfitCheck = (grid, startNodeCoord, endNodeCoord, isOddRowOffset) => {
+    var direction = ''
+    //get  the direction
+    const startRow = startNodeCoord[0]
+    const startCol = startNodeCoord[1]
+    const endRow = endNodeCoord[0]
+    const endCol = endNodeCoord[1]
+    //top
+    if (startRow === (endRow + 1)) {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if (startCol === endCol) { direction = 'northEast' }
+            if (startCol === (endCol - 1)) { direction = 'northWest' }
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if (startCol === endCol) { direction = 'northWest' }
+            if (startCol === (endCol + 1)) { direction = 'northEast' }
+        }
+    }
+    //bot
+    if (startRow === (endRow - 1)) {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if (startCol === endCol) { direction = 'southEast' }
+            if (startCol === (endCol - 1)) { direction = 'southWest' }
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if (startCol === endCol) { direction = 'southWest' }
+            if (startCol === (endCol + 1)) { direction = 'southEast' }
+        }
+    }
+    //middle
+    if (startRow === endRow) {
+        if (startCol === (endCol + 1)) { direction = 'East' }
+        if (startCol === (endCol - 1)) { direction = 'West' }
+    }
+
+    if (direction === 'northWest') {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if ((grid[startRow][startCol - 1] && !grid[startRow][startCol - 1].isBufferHex) && (grid[startRow - 1][startCol] && !grid[startRow - 1][startCol].isBufferHex)) { return false }
+            return true
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if ((grid[startRow][startCol - 1] && !grid[startRow][startCol - 1].isBufferHex) && (grid[startRow - 1][startCol + 1] && !grid[startRow - 1][startCol + 1].isBufferHex)) { return false }
+            return true
+        }
+    }
+    if (direction === 'northEast') {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if ((grid[startRow][startCol + 1] && !grid[startRow][startCol + 1].isBufferHex) && (grid[startRow - 1][startCol - 1] && !grid[startRow - 1][startCol - 1].isBufferHex)) { return false }
+            return true
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if ((grid[startRow][startCol + 1] && !grid[startRow][startCol + 1].isBufferHex) && (grid[startRow - 1][startCol] && !grid[startRow - 1][startCol].isBufferHex)) { return false }
+            return true
+        }
+    }
+    if (direction === 'SouthEast') {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if ((grid[startRow][startCol + 1] && !grid[startRow][startCol + 1].isBufferHex) && (grid[startRow + 1][startCol] && !grid[startRow + 1][startCol].isBufferHex)) { return false }
+            return true
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if ((grid[startRow][startCol + 1] && !grid[startRow][startCol + 1].isBufferHex) && (grid[startRow + 1][startCol + 1] && !grid[startRow + 1][startCol + 1].isBufferHex)) { return false }
+            return true
+        }
+    }
+    if (direction === 'SouthWest') {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if ((grid[startRow][startCol - 1] && !grid[startRow][startCol - 1].isBufferHex) && (grid[startRow + 1][startCol] && !grid[startRow + 1][startCol].isBufferHex)) { return false }
+            return true
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if ((grid[startRow][startCol - 1] && !grid[startRow][startCol - 1].isBufferHex) && (grid[startRow + 1][startCol + 1] && !grid[startRow + 1][startCol + 1].isBufferHex)) { return false }
+            return true
+        }
+    }
+    if (direction === 'East') {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if ((grid[startRow - 1][startCol] && !grid[startRow - 1][startCol].isBufferHex) && (grid[startRow + 1][startCol] && !grid[startRow + 1][startCol].isBufferHex)) { return false }
+            return true
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if ((grid[startRow - 1][startCol + 1] && !grid[startRow - 1][startCol + 1].isBufferHex) && (grid[startRow + 1][startCol + 1] && !grid[startRow + 1][startCol + 1].isBufferHex)) { return false }
+            return true
+        }
+    }
+    if (direction === 'West') {
+        if (((startRow % 2) && isOddRowOffset) || (!(startRow % 2) && !isOddRowOffset)) {
+            if ((grid[startRow - 1][startCol - 1] && !grid[startRow - 1][startCol - 1].isBufferHex) && (grid[startRow + 1][startCol - 1] && !grid[startRow + 1][startCol - 1].isBufferHex)) { return false }
+            return true
+        }
+        if (((startRow % 2) && !isOddRowOffset) || (!(startRow % 2) && isOddRowOffset)) {
+            if ((grid[startRow - 1][startCol] && !grid[startRow - 1][startCol].isBufferHex) && (grid[startRow + 1][startCol] && !grid[startRow + 1][startCol].isBufferHex)) { return false }
+            return true
+        }
+    }
+
+}
+
+
 export { showAvailableNodes }
